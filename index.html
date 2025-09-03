@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Package Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, select, button { padding: 5px; margin: 5px 0; }
+    .checkpoint { margin-left: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Live Package Tracker</h2>
+
+  <label>Tracking Number:</label><br>
+  <input type="text" id="trackingNumber" placeholder="Enter tracking number"><br>
+
+  <label>Carrier:</label><br>
+  <select id="carrier">
+    <option value="usps">USPS</option>
+    <option value="ups">UPS</option>
+    <option value="fedex">FedEx</option>
+    <option value="dhl">DHL</option>
+  </select><br>
+
+  <button onclick="trackPackage()">Track</button>
+
+  <h3>Status:</h3>
+  <div id="status"></div>
+
+  <h3>Checkpoints:</h3>
+  <div id="checkpoints"></div>
+
+  <script>
+    const API_KEY = "asat_34685545fc6f4c49b18eb0fbe02aecd8"; // Replace with your AfterShip API key
+
+    async function trackPackage() {
+      const trackingNumber = document.getElementById('trackingNumber').value.trim();
+      const carrier = document.getElementById('carrier').value;
+
+      if (!trackingNumber) {
+        alert("Please enter a tracking number!");
+        return;
+      }
+
+      const url = `https://api.aftership.com/v4/trackings/${carrier}/${trackingNumber}`;
+      const response = await fetch(url, {
+        headers: {
+          "aftership-api-key": API_KEY,
+          "Content-Type": "application/json"
+        }
+      });
+
+      const data = await response.json();
+      const tracking = data?.data?.tracking;
+
+      if (!tracking) {
+        document.getElementById('status').innerText = "Tracking not found.";
+        document.getElementById('checkpoints').innerHTML = "";
+        return;
+      }
+
+      document.getElementById('status').innerText = `${tracking.tag} (${tracking.subtag_message})`;
+
+      const checkpointsDiv = document.getElementById('checkpoints');
+      checkpointsDiv.innerHTML = "";
+
+      if (tracking.checkpoints && tracking.checkpoints.length > 0) {
+        tracking.checkpoints.forEach(cp => {
+          const div = document.createElement('div');
+          div.className = "checkpoint";
+          div.innerText = `${cp.checkpoint_time} - ${cp.city || ""}, ${cp.country_name || ""} - ${cp.message}`;
+          checkpointsDiv.appendChild(div);
+        });
+      } else {
+        checkpointsDiv.innerText = "No checkpoints yet.";
+      }
+    }
+  </script>
+</body>
+</html>
